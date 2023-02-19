@@ -1,0 +1,15 @@
+[package]
+name = "picktok_proc_macros"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+convert_case = "0.6.0"
+proc-macro2 = "1.0.51"
+quote = "1.0.23"
+syn = { version = "1.0.107", features = ["extra-traits"] }
+
+[lib]
+proc-macro = true

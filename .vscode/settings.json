@@ -1,0 +1,7 @@
+{
+    "rust-analyzer.linkedProjects": [
+      "picktok/lib/Cargo.toml",
+      "picktok/macros/Cargo.toml",
+    ]
+  }
+  
