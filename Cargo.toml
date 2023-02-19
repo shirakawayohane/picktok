@@ -6,4 +6,4 @@ edition = "2021"
 [dependencies]
 paste = "1.0.11"
 seq-macro = "0.3.2"
-picktok_proc_macros = { path = "../proc_macros" }
+picktok_proc_macros = { path = "./lib/proc_macros" }
