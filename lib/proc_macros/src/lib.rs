@@ -115,35 +115,36 @@ pub fn derive_parse_token(input: TokenStream) -> TokenStream {
             .to_case(convert_case::Case::Snake)
             .replace("_", " ");
         let ret = quote! {
-            pub fn #parser_name<#token_life_parameter_with_comma W>(
-                tokens: & #token_life_parameter [W],
-            ) -> picktok::ParseResult<#token_life_parameter, W, #return_type_stream>
-            where
-                W: Clone + picktok::UnwrapToken<#enum_name #token_life_parameter_with_angles>
-            {
-                if tokens.is_empty() {
-                    return Err(picktok::ParseError {
-                        errors: vec![
-                            picktok::ParseErrorKind::NotEnoughToken
-                        ],
-                        tokens_consumed: 0
-                    })
-                }
-                let wrapped_token = &tokens[0];
-                let token = wrapped_token.unwrap_token();
-                if let #enum_name::#variant_name #pattern_match_stream = token {
-                    Ok((&tokens[1..], #tuple_value_stream))
-                } else {
-                    Err(picktok::ParseError {
-                        errors: vec![picktok::ParseErrorKind::Expects {
-                            expects: #lower_variant_name,
-                            found: wrapped_token.clone()
-                        }],
-                        tokens_consumed: 0,
-                    })
-                }
+        pub fn #parser_name<#token_life_parameter_with_comma W>(
+            tokens: & #token_life_parameter [W],
+        ) -> picktok::ParseResult<#token_life_parameter_with_comma W, #return_type_stream>
+        where
+            W: Clone + picktok::UnwrapToken<#enum_name #token_life_parameter_with_angles>
+        {
+            if tokens.is_empty() {
+                return Err(picktok::ParseError {
+                    errors: vec![
+                        picktok::ParseErrorKind::NotEnoughToken
+                    ],
+                    tokens_consumed: 0
+                })
             }
-            };
+            let wrapped_token = &tokens[0];
+            let token = wrapped_token.unwrap_token();
+            if let #enum_name::#variant_name #pattern_match_stream = token {
+                Ok((&tokens[1..], #tuple_value_stream))
+            } else {
+                Err(picktok::ParseError {
+                    errors: vec![picktok::ParseErrorKind::Expects {
+                        expects: #lower_variant_name,
+                        found: wrapped_token.clone()
+                    }],
+                    tokens_consumed: 0,
+                })
+            }
+        }
+        };
+        println!("{}", ret);
         ret
     });
 
