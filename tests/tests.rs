@@ -83,12 +83,12 @@ fn alt_test() {
 #[test]
 fn opt_test() {
     let tokens = &[Token::Ident("ident")];
-    let (rest, ident_str) = opt(ident)(tokens).unwrap();
-    assert!(rest.is_empty());
+    let (rest_tokens, ident_str) = opt(ident)(tokens).unwrap();
+    assert!(rest_tokens.is_empty());
     assert_eq!(ident_str, Some(&"ident"));
 
-    let (rest, ident_str) = opt(string)(tokens).unwrap();
-    assert!(rest.len() == 1);
+    let (rest_tokens, ident_str) = opt(string)(tokens).unwrap();
+    assert!(rest_tokens.len() == 1);
     assert_eq!(ident_str, None);
 }
 
@@ -111,8 +111,8 @@ fn preceded_test() {
 #[test]
 fn terminated_test() {
     let tokens = &[Token::Ident("a"), Token::RParen];
-    let (rest, ident_str) = terminated(ident, r_paren)(tokens).unwrap();
-    assert!(rest.is_empty());
+    let (rest_tokens, ident_str) = terminated(ident, r_paren)(tokens).unwrap();
+    assert!(rest_tokens.is_empty());
     assert_eq!(*ident_str, "a");
 }
 
@@ -129,9 +129,27 @@ fn many0_test() {
         Token::Ident("c"),
         Token::RParen,
     ];
-    let (tokens, idents) = many0(ident)(tokens).unwrap();
-    assert_eq!(tokens, &[Token::RParen]);
+    let (rest_tokens, idents) = many0(ident)(tokens).unwrap();
+    assert_eq!(rest_tokens, &[Token::RParen]);
     assert_eq!(idents, &[&"a", &"b", &"c"]);
+
+    let tokens = &[
+        Token::RParen,
+        Token::Ident("a"),
+        Token::Ident("b"),
+        Token::Ident("c"),
+    ];
+    let (rest_tokens, idents) = many0(l_paren)(tokens).unwrap();
+    assert_eq!(
+        rest_tokens,
+        &[
+            Token::RParen,
+            Token::Ident("a"),
+            Token::Ident("b"),
+            Token::Ident("c"),
+        ]
+    );
+    assert_eq!(idents, vec![]);
 }
 
 #[test]
@@ -140,8 +158,8 @@ fn many0_until_end_test() {
     assert!(many0_until_end(ident)(tokens).is_err());
 
     let tokens = &[Token::Ident("a"), Token::Ident("b"), Token::Ident("c")];
-    let (tokens, idents) = many0_until_end(ident)(tokens).unwrap();
-    assert_eq!(tokens, &[]);
+    let (rest_tokens, idents) = many0_until_end(ident)(tokens).unwrap();
+    assert_eq!(rest_tokens, &[]);
     assert_eq!(idents, &[&"a", &"b", &"c"]);
 }
 
