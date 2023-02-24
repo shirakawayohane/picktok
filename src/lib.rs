@@ -10,12 +10,16 @@ pub use tuple::tuple;
 // T stands for Token
 // O stands for Output
 
+/// Error kind of ParseError.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ParseErrorKind<T> {
     Expects { expects: &'static str, found: T },
+    // mainly thrown when there is no more token to consume.
     NotEnoughToken,
+    // special error of 'fail' parser.
     Fail,
     InfiniteLoop,
+    // Use context to provide more information about the error.
     Context(&'static str),
     Other(String),
 }
@@ -23,22 +27,26 @@ pub enum ParseErrorKind<T> {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ParseError<T> {
     pub errors: Vec<ParseErrorKind<T>>,
+    /// number of tokens consumed before the error.
     pub tokens_consumed: usize,
 }
 
 impl<T> ParseError<T> {
+    /// Create a ParseError with a single error kind.
     pub fn from_error_kind(kind: ParseErrorKind<T>) -> Self {
         ParseError {
             errors: vec![kind],
             tokens_consumed: 0,
         }
     }
+    /// Create a new ParseError with tokens_consumed set to the given value.
     pub fn with_tokens_consumed(self, tokens_consumed: usize) -> Self {
         ParseError {
             errors: self.errors,
             tokens_consumed,
         }
     }
+    // Create a new ParseError with the given error kind appended to the errors vec.
     pub fn with_error_appended(self, kind: ParseErrorKind<T>) -> Self {
         let mut errors = self.errors;
         errors.push(kind);
@@ -49,12 +57,19 @@ impl<T> ParseError<T> {
     }
 }
 
+/// Result of parser function.
+/// Error type is fixed to ParseError<T>.
+/// Ok type is a tuple of the rest of the tokens and the output of the parser.
 pub type ParseResult<'a, T, O> = Result<(&'a [T], O), ParseError<T>>;
 
+/// Trait for parser function.
+/// This is implemented for function pointer and closure.
+/// It is not assumed that library user implements this trait.
 pub trait TokenParser<'a, T, O> {
     fn parse(&mut self, tokens: &'a [T]) -> Result<(&'a [T], O), ParseError<T>>;
 }
 
+/// Implement TokenParser for function pointer and closure.
 impl<'a, T, O, F> TokenParser<'a, T, O> for F
 where
     T: 'a,
@@ -65,16 +80,21 @@ where
     }
 }
 
+/// A trait to supported wrapped token types.
+/// This is used to support token types that are wrapped by other struct.
+/// If you dont want use wrapped token type, you don't have to care about this trait.
 pub trait UnwrapToken<T> {
     fn unwrap_token(&self) -> &T;
 }
 
+/// Any type is implements UnwrapToken for itself.
 impl<T> UnwrapToken<T> for T {
     fn unwrap_token(&self) -> &T {
         self
     }
 }
 
+/// An empty parser to add information when error occurs.
 pub fn context<'a, T: 'a, O>(
     context: &'static str,
     mut parser: impl FnMut(&'a [T]) -> ParseResult<'a, T, O>,
@@ -85,6 +105,24 @@ pub fn context<'a, T: 'a, O>(
     }
 }
 
+/// Runs the provided parser until it fails, gathering the results in a `Vec`.
+/// If the parser fails without consuming any tokens, the parser fails.
+/// # Arguments
+/// * `parser` The parser to apply repeatedly.
+/// *Note*: If the parser passed in accepts empty inputs like `many0` will
+/// return an error, to prevent infinite loops.
+///
+/// ```rust
+/// let tokens = &[
+///     Token::Ident("a"),
+///     Token::Ident("b"),
+///     Token::Ident("c"),
+///     Token::RParen,
+/// ];
+/// let (tokens, idents) = many1(ident)(tokens).unwrap();
+/// assert_eq!(tokens, &[Token::RParen]);
+/// assert_eq!(idents, &[&"a", &"b", &"c"]);
+/// ```
 pub fn many1<'a, T, O>(
     mut parser: impl TokenParser<'a, T, O>,
 ) -> impl FnMut(&'a [T]) -> ParseResult<'a, T, Vec<O>>
@@ -121,6 +159,40 @@ where
     }
 }
 
+/// Runs the provided parser until it fails, gathering the results in a `Vec`.
+/// This parser will always succeed, even if the parser fails without consuming any tokens.
+/// # Arguments
+/// * `parser` The parser to apply repeatedly.
+///
+/// ```rust
+/// let tokens = &[
+///     Token::Ident("a"),
+///     Token::Ident("b"),
+///     Token::Ident("c"),
+///     Token::RParen,
+/// ];
+/// let (rest_tokens, idents) = many0(ident)(tokens).unwrap();
+/// assert_eq!(rest_tokens, &[Token::RParen]);
+/// assert_eq!(idents, &[&"a", &"b", &"c"]);
+///
+/// let tokens = &[
+///     Token::RParen,
+///     Token::Ident("a"),
+///     Token::Ident("b"),
+///     Token::Ident("c"),
+/// ];
+/// let (rest_tokens, idents) = many0(l_paren)(tokens).unwrap();
+/// assert_eq!(
+///     rest_tokens,
+///     &[
+///         Token::RParen,
+///         Token::Ident("a"),
+///         Token::Ident("b"),
+///         Token::Ident("c"),
+///     ]
+/// );
+/// assert_eq!(idents, vec![]);
+/// ```
 pub fn many0<'a, T, O>(
     mut parser: impl TokenParser<'a, T, O>,
 ) -> impl FnMut(&'a [T]) -> ParseResult<'a, T, Vec<O>>
@@ -149,6 +221,15 @@ where
     }
 }
 
+/// Runs the provided parser until it fails, gathering the results in a `Vec`.
+/// This parser may succeeds if the parser fails without consuming any tokens,
+/// but unlike many0, this parser fails if this parser does not consume all of the tokens.
+///
+/// Main use case is to parse top-level definitions, which requires all tokens to be consumed, but also allows empty input.
+///
+/// # Arguments
+/// * `parser` The parser to apply repeatedly.
+///
 pub fn many0_until_end<'a, T, O>(
     mut parser: impl TokenParser<'a, T, O>,
 ) -> impl FnMut(&'a [T]) -> ParseResult<'a, T, Vec<O>>
@@ -182,6 +263,23 @@ where
     }
 }
 
+/// Optional parser. If the provided parser succeeds, the result is wrapped in `Some`.
+/// If the provided parser fails, the result is `None`.
+///
+/// # Arguments
+/// * `parser` The parser to apply.
+///
+/// ```rust
+///
+/// let tokens = &[Token::Ident("ident")];
+/// let (rest_tokens, ident_str) = opt(ident)(tokens).unwrap();
+/// assert!(rest_tokens.is_empty());
+/// assert_eq!(ident_str, Some(&"ident"));
+///
+/// let (rest_tokens, ident_str) = opt(string)(tokens).unwrap();
+/// assert!(rest_tokens.len() == 1);
+/// assert_eq!(ident_str, None);
+/// ```
 pub fn opt<'a, T, O>(
     mut parser: impl TokenParser<'a, T, O>,
 ) -> impl FnMut(&'a [T]) -> ParseResult<'a, T, Option<O>> {
