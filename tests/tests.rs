@@ -134,17 +134,12 @@ fn many0_test() {
     assert_eq!(idents, &[&"a", &"b", &"c"]);
 }
 
-
 #[test]
 fn many0_until_end_test() {
     let tokens = &[Token::RParen];
     assert!(many0_until_end(ident)(tokens).is_err());
 
-    let tokens = &[
-        Token::Ident("a"),
-        Token::Ident("b"),
-        Token::Ident("c"),
-    ];
+    let tokens = &[Token::Ident("a"), Token::Ident("b"), Token::Ident("c")];
     let (tokens, idents) = many0_until_end(ident)(tokens).unwrap();
     assert_eq!(tokens, &[]);
     assert_eq!(idents, &[&"a", &"b", &"c"]);

@@ -100,9 +100,7 @@ where
             match parser.parse(rest) {
                 Ok((rest_tokens, item)) => {
                     if rest_tokens.len() == last_len {
-                        return Err(ParseError::from_error_kind(
-                            ParseErrorKind::InfiniteLoop,
-                        ));
+                        return Err(ParseError::from_error_kind(ParseErrorKind::InfiniteLoop));
                     }
                     last_len = rest_tokens.len();
                     rest = rest_tokens;
@@ -137,9 +135,7 @@ where
             match parser.parse(rest) {
                 Ok((rest_tokens, item)) => {
                     if rest_tokens.len() == last_len {
-                        return Err(ParseError::from_error_kind(
-                            ParseErrorKind::InfiniteLoop,
-                        ));
+                        return Err(ParseError::from_error_kind(ParseErrorKind::InfiniteLoop));
                     }
                     last_len = rest_tokens.len();
                     rest = rest_tokens;
@@ -167,9 +163,7 @@ where
             match parser.parse(rest) {
                 Ok((rest_tokens, item)) => {
                     if rest_tokens.len() == last_len {
-                        return Err(ParseError::from_error_kind(
-                            ParseErrorKind::InfiniteLoop,
-                        ));
+                        return Err(ParseError::from_error_kind(ParseErrorKind::InfiniteLoop));
                     }
                     last_len = rest_tokens.len();
                     rest = rest_tokens;
@@ -247,9 +241,7 @@ pub fn separated_list0<'a, T: 'a, O, OSep>(
             match item_parser(rest) {
                 Ok((rest_tokens, item)) => {
                     if rest_tokens.len() == last_len {
-                        return Err(ParseError::from_error_kind(
-                            ParseErrorKind::InfiniteLoop,
-                        ));
+                        return Err(ParseError::from_error_kind(ParseErrorKind::InfiniteLoop));
                     }
                     last_len = rest_tokens.len();
                     rest = rest_tokens;
@@ -284,9 +276,7 @@ pub fn separated_list1<'a, T: 'a, O, OSep>(
             match item_parser(rest) {
                 Ok((rest_tokens, item)) => {
                     if rest_tokens.len() == last_len {
-                        return Err(ParseError::from_error_kind(
-                            ParseErrorKind::InfiniteLoop,
-                        ));
+                        return Err(ParseError::from_error_kind(ParseErrorKind::InfiniteLoop));
                     }
                     last_len = rest_tokens.len();
                     rest = rest_tokens;
